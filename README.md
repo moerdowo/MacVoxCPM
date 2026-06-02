@@ -1,6 +1,6 @@
 <div align="center">
 
-<img src="assets/AppIcon.icns" width="128" alt="MacVoxCPM icon">
+<img src="assets/icon.png" width="128" alt="MacVoxCPM icon">
 
 # MacVoxCPM
 
