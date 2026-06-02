@@ -54,7 +54,16 @@ struct GeneratorView: View {
             }
         }
         .sheet(isPresented: $showAdvanced) { AdvancedSettingsView() }
-        .sheet(isPresented: $showLibrary) { VoiceLibraryView() }
+        .sheet(isPresented: $showLibrary) {
+            // In a cloning mode, let the user pick a voice straight from the
+            // library sheet; otherwise it's just management.
+            VoiceLibraryView(onSelect: (mode == .clone || mode == .ultimate)
+                ? { voice in
+                    selectLibraryVoice(voice)
+                    showLibrary = false
+                  }
+                : nil)
+        }
         .sheet(isPresented: $showHistory) {
             HistoryView(onReplay: { item in replayHistory(item) })
         }
@@ -147,8 +156,28 @@ struct GeneratorView: View {
                     Spacer()
                     Button("Import file…") { importAdHocVoice() }
                         .buttonStyle(.borderless)
-                    Button("From Library…") { showLibrary = true }
-                        .buttonStyle(.borderless)
+                    if store.voices.isEmpty {
+                        Button("Add to Library…") { showLibrary = true }
+                            .buttonStyle(.borderless)
+                    } else {
+                        Menu("From Library…") {
+                            ForEach(store.voices) { v in
+                                Button {
+                                    selectLibraryVoice(v)
+                                } label: {
+                                    if v.transcript != nil {
+                                        Label(v.name, systemImage: "text.bubble")
+                                    } else {
+                                        Text(v.name)
+                                    }
+                                }
+                            }
+                            Divider()
+                            Button("Manage Library…") { showLibrary = true }
+                        }
+                        .menuStyle(.borderlessButton)
+                        .fixedSize()
+                    }
                 }
 
                 if let voice = selectedVoice {
@@ -182,6 +211,17 @@ struct GeneratorView: View {
                         .frame(minHeight: 70)
                 }
             }
+        }
+    }
+
+    /// Pick a saved voice for cloning. Clears any ad-hoc file selection and,
+    /// for Ultimate Clone, pre-fills the transcript if the voice has one.
+    private func selectLibraryVoice(_ v: SavedVoice) {
+        selectedVoice = v
+        importedVoiceURL = nil
+        if mode == .ultimate, let t = v.transcript, !t.isEmpty,
+           promptTranscript.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
+            promptTranscript = t
         }
     }
 

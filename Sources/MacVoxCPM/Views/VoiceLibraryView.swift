@@ -3,6 +3,10 @@ import AppKit
 import UniformTypeIdentifiers
 
 struct VoiceLibraryView: View {
+    /// When set, the sheet is in "picker" mode: each row gets a Use button and
+    /// double-clicking a row selects it for the caller.
+    var onSelect: ((SavedVoice) -> Void)? = nil
+
     @Environment(AudioStore.self) private var store
     @Environment(\.dismiss) private var dismiss
 
@@ -15,13 +19,20 @@ struct VoiceLibraryView: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 0) {
             HStack {
-                Text("Voice Library").font(.title3).bold()
+                Text(onSelect == nil ? "Voice Library" : "Choose a Voice")
+                    .font(.title3).bold()
                 Spacer()
                 Button {
                     pickFile()
                 } label: { Label("Add Voice…", systemImage: "plus") }
             }
             .padding(.horizontal, 20).padding(.top, 18)
+
+            if onSelect != nil {
+                Text("Pick a voice to use for cloning, or double-click a row.")
+                    .font(.caption).foregroundStyle(.secondary)
+                    .padding(.horizontal, 20).padding(.top, 4)
+            }
 
             if store.voices.isEmpty {
                 emptyState
@@ -76,6 +87,13 @@ struct VoiceLibraryView: View {
                 .font(.caption).foregroundStyle(.secondary)
             }
             Spacer()
+            if let onSelect {
+                Button {
+                    onSelect(voice)
+                } label: { Label("Use", systemImage: "checkmark.circle") }
+                    .buttonStyle(.borderedProminent)
+                    .controlSize(.small)
+            }
             Button {
                 renameText = voice.name
                 renaming = voice
@@ -92,6 +110,8 @@ struct VoiceLibraryView: View {
                 .foregroundStyle(.red)
         }
         .padding(.vertical, 4)
+        .contentShape(Rectangle())
+        .onTapGesture(count: 2) { onSelect?(voice) }
     }
 
     private func importSheet(url: URL) -> some View {
