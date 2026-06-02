@@ -1,0 +1,12 @@
+.DS_Store
+.build/
+.swiftpm/
+build/
+Package.resolved
+*.xcodeproj/xcuserdata/
+*.xcworkspace/xcuserdata/
+Sources/MacVoxCPM/Resources/uv
+Sources/MacVoxCPM/Resources/sidecar/
+__pycache__/
+*.pyc
+.venv/

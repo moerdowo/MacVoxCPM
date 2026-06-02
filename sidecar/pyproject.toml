@@ -1,0 +1,13 @@
+[project]
+name = "macvoxcpm-sidecar"
+version = "0.1.0"
+description = "FastAPI server wrapping the official voxcpm package for MacVoxCPM.app"
+requires-python = ">=3.10,<3.13"
+dependencies = [
+    "voxcpm",
+    "fastapi>=0.110",
+    "uvicorn>=0.27",
+    "soundfile>=0.12",
+    "numpy>=1.26",
+    "huggingface_hub>=0.24",
+]
