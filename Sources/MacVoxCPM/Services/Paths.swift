@@ -57,6 +57,9 @@ enum AppPaths {
     }
 
     static var logFile: URL { runtimeDir.appendingPathComponent("sidecar.log") }
+    /// Written only after `uv pip install` succeeds, so a partially-installed
+    /// venv (e.g. killed mid-install) is correctly re-installed on next launch.
+    static var installMarker: URL { runtimeDir.appendingPathComponent(".install-ok") }
     static var historyFile: URL { applicationSupport.appendingPathComponent("history.json") }
     static var voicesIndexFile: URL { applicationSupport.appendingPathComponent("voices.json") }
     static var settingsFile: URL { applicationSupport.appendingPathComponent("settings.json") }

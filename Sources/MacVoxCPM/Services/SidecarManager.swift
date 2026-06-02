@@ -25,10 +25,12 @@ final class SidecarManager {
     var logTail: [String] = []   // last ~400 lines of sidecar stdout/stderr
     var isShuttingDown = false
 
-    /// `true` once we've successfully started a sidecar on disk *and* set up
-    /// a venv. UI uses this to skip the onboarding wizard on subsequent runs.
+    /// `true` once `uv pip install` finished cleanly on a previous run. Used
+    /// to skip the (slow) install step on subsequent launches.
     var hasInstalledRuntime: Bool {
-        FileManager.default.fileExists(atPath: AppPaths.venvPython.path)
+        let fm = FileManager.default
+        return fm.fileExists(atPath: AppPaths.venvPython.path)
+            && fm.fileExists(atPath: AppPaths.installMarker.path)
     }
 
     // MARK: - Private
@@ -54,6 +56,13 @@ final class SidecarManager {
             if !hasInstalledRuntime {
                 try await extractUV()
                 try await syncSidecarSources()
+                // If venv exists but the marker doesn't, the previous install
+                // was interrupted — start fresh.
+                if FileManager.default.fileExists(atPath: AppPaths.venvDir.path)
+                    && !FileManager.default.fileExists(atPath: AppPaths.installMarker.path) {
+                    append("removing partial venv")
+                    try? FileManager.default.removeItem(at: AppPaths.venvDir)
+                }
                 try await createVenv()
                 try await installPackages()
             } else {
@@ -169,6 +178,9 @@ final class SidecarManager {
         if result.code != 0 {
             throw SidecarError.command("uv pip install failed (exit \(result.code))\n\(result.stderr.suffix(2000))")
         }
+        // Mark the install as complete only after `uv pip install` returns 0,
+        // so an interrupted install is re-run on the next launch.
+        try? Data().write(to: AppPaths.installMarker, options: .atomic)
         append("packages installed")
     }
 
@@ -189,6 +201,25 @@ final class SidecarManager {
         // wipe everything from Settings → Storage with one click.
         env["HF_HOME"] = AppPaths.modelsDir.appendingPathComponent("hf_home").path
         env["PYTHONUNBUFFERED"] = "1"
+        // Use plain HTTP LFS downloads instead of the xet chunked protocol.
+        // xet stages chunks in its own cache (so our directory-size progress
+        // reads ~0% until each file finalizes) and was measurably slower and
+        // flakier here. Direct LFS writes growing *.incomplete files into the
+        // model dir, which makes our progress watcher accurate.
+        env["HF_HUB_DISABLE_XET"] = "1"
+        env["HF_XET_HIGH_PERFORMANCE"] = "0"
+
+        // Reuse the user's existing HF token if they have one — anonymous
+        // downloads via xet are heavily rate-limited and "connection
+        // struggling" warnings dominate the log.
+        if env["HF_TOKEN"] == nil,
+           let token = try? String(contentsOf: URL(fileURLWithPath:
+               NSString("~/.cache/huggingface/token").expandingTildeInPath),
+               encoding: .utf8) {
+            let trimmed = token.trimmingCharacters(in: .whitespacesAndNewlines)
+            if !trimmed.isEmpty { env["HF_TOKEN"] = trimmed }
+        }
+
         p.environment = env
 
         let outPipe = Pipe(), errPipe = Pipe()
