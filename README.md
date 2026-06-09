@@ -146,3 +146,7 @@ at runtime.
 
 - [OpenBMB / VoxCPM](https://github.com/OpenBMB/VoxCPM) — the model and Python package that does all the heavy lifting.
 - [astral‑sh / uv](https://github.com/astral-sh/uv) — fast, self‑contained Python environment management.
+
+## License
+
+Released under the [MIT License](LICENSE).
