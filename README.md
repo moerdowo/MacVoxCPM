@@ -18,6 +18,10 @@ launch it quietly sets up its own Python runtime and downloads the **VoxCPM2** m
 locally on your Mac. Nothing is sent to a server; generation happens on‑device
 (Apple Silicon / MPS).
 
+<div align="center">
+  <img src="assets/screenshot.png" width="800" alt="MacVoxCPM main window">
+</div>
+
 ## ✨ Features
 
 - 🗣️ **Text‑to‑Speech** in 30 languages, 48 kHz output.
